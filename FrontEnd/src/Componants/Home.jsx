@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function Home() {
     const [expenses, setExpenses] = useState([]);
@@ -53,12 +55,30 @@ function Home() {
                     form,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
+                toast.success('Update Expense successfully', {
+                    position: 'top-right',
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                  }); 
             } else {
                 await axios.post(
                     'http://localhost:3000/api/v1/user/addexpense',
                     form,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
+                toast.success('Expense Added successfully', {
+                    position: 'top-right',
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                  }); 
             }
             setForm({ amount: "", description: "", category: "" });
             setEditingId(null);
@@ -78,6 +98,15 @@ function Home() {
                 `http://localhost:3000/api/v1/user/expenses/${id}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
+            toast.success('Delete Expense successfully', {
+                position: 'top-right',
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+              });          
             fetchExpenses();
         } catch (error) {
             setError(error.response?.data?.message || 'Failed to delete expense');
@@ -121,6 +150,8 @@ function Home() {
                     </button>
                 </div>
             </header>
+
+            <ToastContainer />
 
             <div className="p-6 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white shadow-lg rounded-xl p-6">

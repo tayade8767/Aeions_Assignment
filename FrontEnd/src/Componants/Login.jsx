@@ -5,6 +5,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function Login() {
   const [username, setusername] = useState('');
@@ -21,9 +23,27 @@ function Login() {
       sessionStorage.setItem('user', JSON.stringify(response.data.data.user));
       const token = response.data.data.token;
       sessionStorage.setItem('token', token);
+      toast.success('Login successful!', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });  
       navigate('/home');
       console.log('Login successful:', response.data);
     } catch (error) {
+      toast.error('Login failed. Please check your credentials.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });  
       console.error('Error during login:', error);
     }
   };
@@ -36,7 +56,7 @@ function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-
+      <ToastContainer />
         <div className="flex justify-center mb-6">
           <img
             src="https://cdn-icons-png.flaticon.com/512/747/747376.png"
