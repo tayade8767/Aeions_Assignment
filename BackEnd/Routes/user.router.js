@@ -18,10 +18,10 @@ import {
  console.log("i am in userrouter.js file");
  router.route('/register').post(registerUser);
 
- router.route('/addexpense').post(verifyJWT, createExpense);
-router.route('/getexpenses').get(verifyJWT, getExpenses);
-router.route('/expenses/:id').put(verifyJWT, updateExpense);
-router.route('/expenses/:id').delete(verifyJWT, deleteExpense);
+ router.route('/addstory').post(verifyJWT, createExpense);
+router.route('/getstory').get(verifyJWT, getExpenses);
+router.route('/story/:id').put(verifyJWT, updateExpense);
+router.route('/story/:id').delete(verifyJWT, deleteExpense);
 
  router.route('/validate-token', verifyJWT).get(validateToken);
 

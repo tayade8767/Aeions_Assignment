@@ -168,60 +168,59 @@ const validateToken = asyncHandler( async (req,res) => {
 })
 
 const createExpense = asyncHandler(async (req, res) => {
-    const { amount, description, category } = req.body;
+    const { title, description } = req.body;
 
-    if (!amount || !description || !category) {
+    if (!title || !description) {
         throw new ApiError("All fields are required", 400);
     }
 
-    const expense = await Expense.create({
+    const story = await Expense.create({
         userId: req.user._id,
-        amount,
         description,
-        category,
+        title
     });
 
     return res.status(200).json({
         success: true,
-        data: expense,
+        data: story,
         message: "Expense created successfully",
     });
 });
 
 // Get all expenses for a user
 const getExpenses = asyncHandler(async (req, res) => {
-    const expenses = await Expense.find({ userId: req.user._id });
-   return res.status(200).json({ success: true, data: expenses });
+    const story = await Expense.find({ userId: req.user._id });
+   return res.status(200).json({ success: true, data: story });
 });
 
 // Edit (Update) an expense
 const updateExpense = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { amount, description, category } = req.body;
+    const { title, description } = req.body;
 
-    const updatedExpense = await Expense.findOneAndUpdate(
+    const updatedstory = await Expense.findOneAndUpdate(
         { _id: id, userId: req.user._id },
-        { amount, description, category },
+        {  description, title },
         { new: true, runValidators: true }
     );
 
-    if (!updatedExpense) {
+    if (!updatedstory) {
         throw new ApiError("Expense not found or unauthorized", 404);
     }
 
-   return res.status(200).json({ success: true, data: updatedExpense });
+   return res.status(200).json({ success: true, data: updatedstory });
 });
 
 // Delete an expense
 const deleteExpense = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const deletedExpense = await Expense.findOneAndDelete({
+    const deletedstory = await Expense.findOneAndDelete({
         _id: id,
         userId: req.user._id,   
     });
 
-    if (!deletedExpense) {
+    if (!deletedstory) {
         throw new ApiError("Expense not found or unauthorized", 404);
     }
 

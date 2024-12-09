@@ -1,48 +1,47 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from 'react';
-import { Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Trash2, Edit, PlusCircle } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 function Home() {
     const [expenses, setExpenses] = useState([]);
     const [form, setForm] = useState({ 
-        amount: "", 
         description: "", 
-        category: "" 
+        title: "" 
     });
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [user, setUser] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const userData = JSON.parse(sessionStorage.getItem('user'));
-        setUser(userData);
-        fetchExpenses();
-    }, []);
-
-    const fetchExpenses = async () => {
+    const fetchstory = useCallback(async () => {
         try {
             setIsLoading(true);
             const token = sessionStorage.getItem('token');
-            console.log("Token sent in request:", token);
-
-            const { data } = await axios.get('http://localhost:3000/api/v1/user/getexpenses', {
+            const { data } = await axios.get('http://localhost:3000/api/v1/user/getstory', {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
             setExpenses(data.data);
         } catch (error) {
-            setError(error.response?.data?.message || 'Failed to fetch expenses');
+            toast.error(error.response?.data?.message || 'Failed to fetch story');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        const userData = JSON.parse(sessionStorage.getItem('user'));
+        setUser(userData);
+        fetchstory();
+    }, [fetchstory]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -51,40 +50,24 @@ function Home() {
             const token = sessionStorage.getItem('token');
             if (editingId) {
                 await axios.put(
-                    `http://localhost:3000/api/v1/user/expenses/${editingId}`,
+                    `http://localhost:3000/api/v1/user/story/${editingId}`,
                     form,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                toast.success('Update Expense successfully', {
-                    position: 'top-right',
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                  }); 
+                toast.success('Story updated successfully');
             } else {
                 await axios.post(
-                    'http://localhost:3000/api/v1/user/addexpense',
+                    'http://localhost:3000/api/v1/user/addstory',
                     form,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                toast.success('Expense Added successfully', {
-                    position: 'top-right',
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                  }); 
+                toast.success('Story added successfully');
             }
-            setForm({ amount: "", description: "", category: "" });
+            setForm({ description: "", title: "" });
             setEditingId(null);
-            fetchExpenses();
+            fetchstory();
         } catch (error) {
-            setError(error.response?.data?.message || 'Failed to save expense');
+            toast.error(error.response?.data?.message || 'Failed to save story');
         } finally {
             setIsLoading(false);
         }
@@ -95,33 +78,24 @@ function Home() {
             setIsLoading(true);
             const token = sessionStorage.getItem('token');
             await axios.delete(
-                `http://localhost:3000/api/v1/user/expenses/${id}`,
+                `http://localhost:3000/api/v1/user/story/${id}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            toast.success('Delete Expense successfully', {
-                position: 'top-right',
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-              });          
-            fetchExpenses();
+            toast.success('Story deleted successfully');
+            fetchstory();
         } catch (error) {
-            setError(error.response?.data?.message || 'Failed to delete expense');
+            toast.error(error.response?.data?.message || 'Failed to delete story');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const startEdit = (expense) => {
+    const startEdit = (story) => {
         setForm({
-            amount: expense.amount,
-            description: expense.description,
-            category: expense.category
+            description: story.description,
+            title: story.title
         });
-        setEditingId(expense._id);
+        setEditingId(story._id);
     };
 
     const logoutuser = () => {
@@ -129,120 +103,132 @@ function Home() {
         sessionStorage.removeItem('user');
         navigate('/');
         setUser(null);
-    }
+    };
 
-    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const averageExpense = expenses.length ? (totalExpenses / expenses.length).toFixed(2) : 0;
-    const highestExpense = expenses.length ? Math.max(...expenses.map(exp => exp.amount)).toFixed(2) : 0;
+    const filteredStories = expenses.filter(story => 
+        story.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        story.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
-        <div className="min-h-screen bg-gradient-to-r from-blue-50 via-gray-100 to-blue-50">
-        
-            <header className="flex flex-wrap justify-between items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 shadow-lg">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold flex items-center space-x-2">
-                    <span role="img" aria-label="Logo">📘</span>
-                    <span>Expense Tracker</span>
-                </h1>
-                <div className="flex items-center space-x-4 mt-2 sm:mt-0">
-                    <span className="text-sm truncate">Welcome, {user?.username}</span>
-                    <button onClick={logoutuser} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 shadow text-sm sm:text-base">
-                        Sign Out
-                    </button>
+        <div className="min-h-screen bg-gradient-to-r from-indigo-100 via-blue-100 to-indigo-100 p-4">
+            <motion.div 
+                initial={{ opacity: 0, y: -50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
+            >
+                <header className="flex justify-between items-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 shadow-xl">
+                    <h1 className="text-2xl font-bold tracking-wide flex items-center">
+                        📘 Story Sharing 
+                    </h1>
+                    <div className="flex items-center space-x-4">
+                        <span className="text-sm font-medium">Welcome, {user?.username}</span>
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={logoutuser}
+                            className="bg-red-500 px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm font-semibold shadow-lg"
+                        >
+                            Sign Out
+                        </motion.button>
+                    </div>
+                </header>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                    <div className="bg-white shadow-lg rounded-xl p-6">
+                        <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                            <PlusCircle className="mr-2 text-blue-500" />
+                            {editingId ? 'Edit Story' : 'Add New Story'}
+                        </h2>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <input
+                                type="text"
+                                value={form.title}
+                                onChange={e => setForm({ ...form, title: e.target.value })}
+                                placeholder="Title"
+                                className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 transition"
+                                required
+                            />
+                            <textarea
+                                placeholder="Description"
+                                value={form.description}
+                                onChange={e => setForm({ ...form, description: e.target.value })}
+                                className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 transition resize-none h-32"
+                                required
+                            />
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition shadow-lg"
+                            >
+                                {isLoading ? 'Processing...' : editingId ? 'Update Story' : 'Add Story'}
+                            </motion.button>
+                        </form>
+                    </div>
+
+                    <div className="col-span-2 bg-white shadow-lg rounded-xl p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-gray-700">Your Stories</h2>
+                            <input 
+                                type="text"
+                                placeholder="Search stories..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="border rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 transition"
+                            />
+                        </div>
+                        
+                        <AnimatePresence>
+                            {filteredStories.length > 0 ? (
+                                filteredStories.map((expense) => (
+                                    <motion.div 
+                                        key={expense._id} 
+                                        initial={{ opacity: 0, x: -50 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 50 }}
+                                        className="flex justify-between items-center border-b py-4 hover:bg-gray-100 transition"
+                                    >
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-blue-600">{expense.title}</h3>
+                                            <p className="text-gray-600 line-clamp-2">{expense.description}</p>
+                                            <span className="text-sm text-gray-500">{expense.date}</span>
+                                        </div>
+                                        <div className="flex items-center space-x-4">
+                                            <motion.button
+                                                whileHover={{ scale: 1.1 }}
+                                                onClick={() => startEdit(expense)}
+                                                className="text-blue-500 hover:text-blue-600 transition flex items-center"
+                                            >
+                                                <Edit size={18} className="mr-1" /> Edit
+                                            </motion.button>
+                                            <motion.button
+                                                whileHover={{ scale: 1.1 }}
+                                                onClick={() => handleDelete(expense._id)}
+                                                className="text-red-500 hover:text-red-600 transition flex items-center"
+                                            >
+                                                <Trash2 size={18} className="mr-1" /> Delete
+                                            </motion.button>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            ) : (
+                                <motion.p 
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="text-gray-500 text-center py-6"
+                                >
+                                    {searchTerm ? 'No stories match your search' : 'No stories recorded yet.'}
+                                </motion.p>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
-            </header>
+            </motion.div>
 
             <ToastContainer />
-
-            <div className="p-6 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white shadow-lg rounded-xl p-6">
-                    <h2 className="text-lg font-bold text-gray-700 mb-4">
-                        {editingId ? 'Edit Expense' : 'Add New Expense'}
-                    </h2>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <input
-                            type="number"
-                            placeholder="Amount ($)"
-                            value={form.amount}
-                            onChange={e => setForm({ ...form, amount: e.target.value })}
-                            className="w-full border-2 rounded-lg p-2 focus:outline-blue-400 focus:ring"
-                            required
-                        />
-                        <input
-                            type="text"
-                            placeholder="Description"
-                            value={form.description}
-                            onChange={e => setForm({ ...form, description: e.target.value })}
-                            className="w-full border-2 rounded-lg p-2 focus:outline-blue-400 focus:ring"
-                            required
-                        />
-                            <input
-                            type="text"
-                            value={form.category}
-                            onChange={e => setForm({ ...form, category: e.target.value })}
-                            placeholder="Category Name"
-                            className="w-full border-2 rounded-lg p-2 focus:outline-blue-400 focus:ring"
-                            required
-                        />
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 shadow-lg text-sm sm:text-base"
-                        >
-                            {isLoading ? 'Processing...' : editingId ? 'Update Expense' : 'Add Expense'}
-                        </button>
-                    </form>
-                </div>
-
-                <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="bg-white shadow-lg rounded-lg p-4 text-center">
-                        <h3 className="text-gray-500">Total Expenses</h3>
-                        <p className="text-3xl font-bold text-blue-600">${totalExpenses.toFixed(2)}</p>
-                    </div>
-                    <div className="bg-white shadow-lg rounded-lg p-4 text-center">
-                        <h3 className="text-gray-500">Average Expense</h3>
-                        <p className="text-3xl font-bold text-green-600">${averageExpense}</p>
-                    </div>
-                    <div className="bg-white shadow-lg rounded-lg p-4 text-center">
-                        <h3 className="text-gray-500">Highest Expense</h3>
-                        <p className="text-3xl font-bold text-red-600">${highestExpense}</p>
-                    </div>
-                </div>
-
-                <div className="col-span-3 bg-white shadow-lg rounded-lg p-6">
-                    <h2 className="text-lg font-bold mb-4 text-gray-700">Recent Expenses</h2>
-                    {expenses.length > 0 ? (
-                        expenses.map(expense => (
-                            <div key={expense._id} className="flex justify-between items-center border-b py-3 hover:bg-gray-100">
-                              <div className="flex flex-col">
-                                <span className="bg-blue-100 text-blue-500 px-2 py-1 rounded-full text-sm font-semibold">
-                                    {expense.category}
-                                </span>
-                                <span className="text-gray-600 mt-1">{expense.description}</span>
-                                <span className="text-sm text-gray-500 mt-1">{expense.date}</span>
-                              </div>
-                                <div className="flex items-center space-x-4">
-                                    <span className="font-bold text-blue-500">${expense.amount.toFixed(2)}</span>
-                                    <button
-                                        onClick={() => startEdit(expense)}
-                                        className="text-blue-500 hover:text-blue-600"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(expense._id)}
-                                        className="text-red-500 hover:text-red-600"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-gray-500">No expenses recorded yet.</p>
-                    )}
-                </div>
-
-            </div>
         </div>
     );
 }
